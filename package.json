@@ -1,0 +1,39 @@
+{
+  "name": "app-caronas",
+  "version": "1.0.0",
+  "description": "Aplicação Web de Gestão de Caronas Corporativas - Supabase + React",
+  "main": "index.html",
+  "author": "Frederico Garcia",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1",
+    "start": "npx http-server -p 8080",
+    "build": "echo 'No build needed - static files only'",
+    "test": "echo 'Test framework not configured'"
+  },
+  "keywords": [
+    "caronas",
+    "corporativo",
+    "react",
+    "supabase",
+    "pwa"
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fredgarciao/App_Caronas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fredgarciao/App_Caronas/issues"
+  },
+  "homepage": "https://github.com/fredgarciao/App_Caronas#readme"
+}

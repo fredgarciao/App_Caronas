@@ -1,63 +1,33 @@
-/**
- * @file types.js
- * Type definitions em JSDoc (preparação para TypeScript futuro)
- */
-
+// src/types.js - Apenas JSDoc, não precisa de namespace
 /**
  * @typedef {Object} User
- * @property {string} id - UUID do utilizador
+ * @property {string} id - UUID
  * @property {string} name - Nome completo
- * @property {string} email - E-mail corporativo
- * @property {string} username - Nome de utilizador único
+ * @property {string} email - E-mail
+ * @property {string} username - Nome de usuário
  */
 
 /**
  * @typedef {Object} Trip
- * @property {string} id - UUID da carona
- * @property {string} ownerId - UUID do criador
- * @property {string} ownerName - Nome do criador
+ * @property {string} id - UUID
+ * @property {string} owner_id - ID do criador
+ * @property {string} owner_name - Nome do criador
  * @property {string} origin - Local de partida
  * @property {string} destination - Local de chegada
- * @property {string} time - Horário (HH:MM)
- * @property {number} totalSeats - Vagas totais
- * @property {number} seatsLeft - Vagas disponíveis
- * @property {string} contact - Telemóvel de contacto
- * @property {number} dayIndex - Índice dia semana (0-4)
- * @property {string[]} participants - Array de UUIDs de passageiros
- * @property {Date} createdAt - Data de criação
+ * @property {string} time - Hora (HH:MM)
+ * @property {number} total_seats - Total de vagas
+ * @property {number} seats_left - Vagas disponíveis
+ * @property {string} contact - Telefone do responsável
+ * @property {number} day_index - Dia da semana (0-4)
+ * @property {string[]} participants - IDs dos participantes
  */
 
 /**
  * @typedef {Object} Message
- * @property {string} id - UUID da mensagem
- * @property {string} tripId - UUID da carona relacionada
- * @property {string} userId - UUID do remetente
- * @property {string} userName - Nome do remetente
+ * @property {string} id - UUID
+ * @property {string} trip_id - ID da carona
+ * @property {string} user_id - ID do usuário
+ * @property {string} user_name - Nome do usuário
  * @property {string} text - Conteúdo da mensagem
- * @property {Date} createdAt - Data de envio
+ * @property {string} created_at - Timestamp
  */
-
-/**
- * @typedef {Object} Notification
- * @property {string} id - ID único
- * @property {string} text - Conteúdo
- * @property {number} ts - Timestamp
- * @property {boolean} read - Já foi lida?
- * @property {string[]} [forUsers] - UUIDs dos destinatários
- */
-
-/**
- * @typedef {Object} AuthState
- * @property {User | null} currentUser - Utilizador autenticado
- * @property {boolean} isLoading - Carregamento em progresso?
- * @property {string} error - Mensagem de erro
- */
-
-/**
- * @typedef {Object} TripsState
- * @property {Trip[]} trips - Lista de caronas
- * @property {boolean} isLoading - Carregamento em progresso?
- * @property {string} error - Mensagem de erro
- */
-
-export {};

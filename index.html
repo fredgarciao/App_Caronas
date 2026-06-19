@@ -17,18 +17,20 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- 🔹 IMPORTS DOS MÓDULOS REFATORADOS -->
-  <script src="./src/constants.js"></script>
-  <script src="./src/types.js"></script>
-  <script src="./src/utils.js"></script>
-  <script src="./src/authService.js"></script>
-  <script src="./src/tripsService.js"></script>
-  <script src="./src/messagesService.js"></script>
-  <script src="./src/notificationService.js"></script>
-  <script src="./src/hooks/useAuth.js"></script>
-  <script src="./src/hooks/useTrips.js"></script>
-  <script src="./src/hooks/useMessages.js"></script>
-  <script src="./src/hooks/useNotifications.js"></script>
+<!-- 🔹 MÓDULOS REFATORADOS (Namespace Global) -->
+<script src="./src/constants.js"></script>
+<script src="./src/types.js"></script>
+<script src="./src/utils.js"></script>
+<script src="./src/authService.js"></script>
+<script src="./src/tripsService.js"></script>
+<script src="./src/messagesService.js"></script>
+<script src="./src/notificationService.js"></script>
+<!-- 🔹 INICIALIZADOR -->
+<script src="./src/app.js"></script>
+
+<!-- 🔹 APP PRINCIPAL (Hooks e React) -->
+<script type="text/babel" src="./src/app-main.jsx"></script>
+
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
