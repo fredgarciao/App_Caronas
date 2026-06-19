@@ -2,10 +2,9 @@ window.APP = window.APP || {};
 
 (function(APP) {
   APP.SUPABASE = {
-    URL: 'https://tpyposwehfijibzhjuxk.supabase.co',
-    KEY: 'sb_publishable_Wbvoq2RMCGHJDXL53pl-rw_bzF9Fo3i',
+   URL: 'https://erdexlbzqdvsvsybropv.supabase.co',
+    KEY: 'sb_publishable_iyVI4cu5LKkzUyrUzH_zdQ_MlxJq3sT',
   };
-
   APP.COLORS = {
     PRIMARY: '#5c6bc0',
     BACKGROUND: '#0d1117',
