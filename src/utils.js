@@ -59,4 +59,15 @@ window.APP = window.APP || {};
   APP.nowTimestamp = function() {
     return Date.now();
   };
+
+  /**
+   * Filtra caronas por dia da semana e ordena por horário
+   * @param {Array} trips - Lista completa de caronas (formato camelCase)
+   * @param {number} dayIndex - Dia selecionado (0-4)
+   */
+  APP.filterAndSortTripsByDay = function(trips, dayIndex) {
+    return trips
+      .filter(t => t.dayIndex === dayIndex)
+      .sort((a, b) => a.time.localeCompare(b.time));
+  };
 })(window.APP);
