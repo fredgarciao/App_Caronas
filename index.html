@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Caronas - Gestão de Caronas Corporativas</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <!-- React & Babel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 🔹 IMPORTS DOS MÓDULOS REFATORADOS -->
+  <script src="./src/constants.js"></script>
+  <script src="./src/types.js"></script>
+  <script src="./src/utils.js"></script>
+  <script src="./src/authService.js"></script>
+  <script src="./src/tripsService.js"></script>
+  <script src="./src/messagesService.js"></script>
+  <script src="./src/notificationService.js"></script>
+  <script src="./src/hooks/useAuth.js"></script>
+  <script src="./src/hooks/useTrips.js"></script>
+  <script src="./src/hooks/useMessages.js"></script>
+  <script src="./src/hooks/useNotifications.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #070a10; }
+    body { display: flex; justify-content: center; align-items: flex-start; }
+    #root { width: 100%; max-width: 448px; height: 100dvh; }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; }
+    button { border: none; background: none; cursor: pointer; }
+    input, textarea { border: none; outline: none; }
+    textarea { resize: none; font-family: inherit; }
+    @keyframes slideUp   { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes bellShake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-14deg)} 40%{transform:rotate(14deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)} }
+    .slide-up  { animation: slideUp 0.22s ease; }
+    .fade-in   { animation: fadeIn  0.18s ease; }
+    .bell-ring { animation: bellShake 0.5s ease; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ═══════════════════════════════════════════════════════════════
+    // INICIALIZAR SERVIÇOS
+    // ═══════════════════════════════════════════════════════════════
+    const supabaseUrl = 'https://tpyposwehfijibzhjuxk.supabase.co';
+    const supabaseKey = 'sb_publishable_Wbvoq2RMCGHJDXL53pl-rw_bzF9Fo3i';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Inicializar todos os serviços
+    window.initAuthService?.(supabase);
+    window.initTripsService?.(supabase);
+    window.initMessagesService?.(supabase);
+    window.initNotificationService?.(supabase);
+
+    // ═══════════════════════════════════════════════════════════════
+    // COMPONENTES UI (Simplificados - movidos para serem reutilizáveis)
+    // ═══════════════════════════════════════════════════════════════
+
+    // Avatar Component
+    function Avatar({ name, size = 28 }) {
+      const bg = window.getAvatarColor(name);
+      return (
+        <div style={{ width: size, height: size, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", color: "#fff", fontSize: size * 0.36, fontWeight: 700 }}>{window.getInitials(name)}</span>
+        </div>
+      );
+    }
+
+    // Button Component
+    function Btn({ children, variant = "primary", full, disabled, onClick, style: sx, type = "button" }) {
+      const base = { fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1, width: full ? "100%" : undefined, padding: "12px 18px", fontSize: "0.9rem", transition: "all 0.2s" };
+      const variants = { 
+        primary: { background: "#3f51b5", color: "#fff", border: "1px solid #5c6bc0" }, 
+        secondary: { background: "#141929", color: "#9fa8da", border: "1px solid #252d4a" }, 
+        danger: { background: "#1a1010", color: "#ef5350", border: "1px solid #3a1a1a" } 
+      };
+      return <button type={type} disabled={disabled} onClick={onClick} style={{ ...base, ...variants[variant], ...sx }}>{children}</button>;
+    }
+
+    // Input Field Component
+    function InputField({ label, error, ...props }) {
+      return (
+        <div style={{ marginTop: 14 }}>
+          {label && <label style={{ fontFamily: "'DM Sans', sans-serif", display: "block", color: "#9fa8da", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>{label}</label>}
+          <input {...props} style={{ fontFamily: "'DM Sans', sans-serif", display: "block", width: "100%", background: "#0d1117", border: error ? "1.5px solid #ef5350" : "1.5px solid #252d4a", borderRadius: 12, padding: "11px 14px", color: "#e8eaf6", fontSize: "0.9rem", colorScheme: "dark" }} />
+          {error && <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#ef5350", fontSize: "0.7rem", marginTop: 3 }}>{error}</p>}
+        </div>
+      );
+    }
+
+    // Modal Shell Component
+    function ModalShell({ title, onClose, children }) {
+      return (
+        <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-end", background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}>
+          <div onClick={e => e.stopPropagation()} className="slide-up" style={{ width: "100%", background: "#131828", borderRadius: "20px 20px 0 0", padding: "20px 18px 32px", maxHeight: "92dvh", overflowY: "auto", borderTop: "1px solid #252d4a" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+              <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8eaf6", fontWeight: 700, fontSize: "1.05rem" }}>{title}</h2>
+              {onClose && <button onClick={onClose} style={{ color: "#5c6bc0" }}>✕</button>}
+            </div>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // APP PRINCIPAL
+    // ═══════════════════════════════════════════════════════════════
+
+    function App() {
+      // Usar os hooks criados
+      const auth = window.useAuth?.(supabase);
+      const trips = window.useTrips?.(supabase, auth?.user?.id);
+      const messages = window.useMessages?.(supabase, auth?.user?.id);
+      const notifs = window.useNotifications?.(auth?.user?.id);
+
+      // Estados locais
+      const [selectedDay, setSelectedDay] = useState(window.getTodayIndex?.() || 0);
+      const [editTrip, setEditTrip] = useState(null);
+      const [deleteTrip, setDeleteTrip] = useState(null);
+      const [joinTrip, setJoinTrip] = useState(null);
+      const [leaveTrip, setLeaveTrip] = useState(null);
+      const [chatTrip, setChatTrip] = useState(null);
+      const [showBell, setShowBell] = useState(false);
+      const [showPasswordUpdate, setShowPasswordUpdate] = useState(false);
+      const [newPassword, setNewPassword] = useState("");
+
+      const weekDates = window.getWeekDates?.() || [];
+
+      // Loading
+      if (auth?.loading || trips?.loading) {
+        return (
+          <div style={{ width: "100%", height: "100dvh", background: "#0d1117", display: "flex", justifyContent: "center", alignItems: "center", color: "#5c6bc0" }}>
+            <div style={{ animation: "slideUp 0.5s ease infinite" }}>⟳</div>
+          </div>
+        );
+      }
+
+      // Auth Screen
+      if (!auth?.user) {
+        return (
+          <AuthScreen 
+            onAuth={(user) => auth?.setCurrentUser?.(user)}
+            onPasswordRecovery={(email) => auth?.sendPasswordRecovery?.(email)}
+            onRegister={(data) => auth?.register?.(data.name, data.email, data.username, data.password)}
+            onLogin={(email, password) => auth?.login?.(email, password)}
+          />
+        );
+      }
+
+      // Main App
+      return (
+        <div style={{ width: "100%", height: "100dvh", background: "#0d1117", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+          
+          {/* PASSWORD UPDATE MODAL */}
+          {showPasswordUpdate && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 999, background: "#0d1117", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28 }}>
+              <div style={{ width: "100%", background: "#141929", padding: 24, borderRadius: 16, border: "1px solid #252d4a" }}>
+                <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8eaf6", fontWeight: 700, fontSize: "1.2rem", marginBottom: 8 }}>Redefinir Senha</h2>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.82rem", marginBottom: 20 }}>Digite sua nova senha abaixo.</p>
+                <InputField label="Nova Senha" type="password" placeholder="••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <Btn full style={{ marginTop: 20 }} onClick={() => {
+                  auth?.updatePassword?.(newPassword).then(result => {
+                    if (result.success) {
+                      setShowPasswordUpdate(false);
+                      setNewPassword("");
+                    }
+                  });
+                }}>✓ Atualizar Senha</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* HEADER */}
+          <div style={{ background: "#0d1117", display: "flex", justifyContent: "center", paddingTop: "18px", paddingBottom: "4px" }}>
+            <img src="image_8885dd.png" alt="SENAI CIMATEC" style={{ height: "30px", objectFit: "contain" }} onError={e => { e.target.onerror = null; e.target.src = "https://placehold.co/150x30/0d1117/5c6bc0?text=SENAI+CIMATEC"; }} />
+          </div>
+
+          {/* TOP BAR */}
+          <div style={{ background: "#0d1117", borderBottom: "1px solid #141929", zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Avatar name={auth?.user?.name || "?"} size={32} />
+                <div>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#5c6bc0", fontSize: "0.63rem", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Semana atual</p>
+                  <h1 style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8eaf6", fontSize: "1.05rem", fontWeight: 700, lineHeight: 1 }}>Caronas</h1>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button onClick={() => setShowBell(!showBell)} style={{ color: "#5c6bc0", padding: 4, cursor: "pointer" }}>🔔</button>
+                <button onClick={() => setEditTrip("new")} style={{ fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 10, background: "#283593", color: "#9fa8da", border: "1px solid #3949ab", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>+ Nova</button>
+                <button onClick={() => auth?.logout?.().then(() => window.location.reload())} style={{ color: "#5c6bc0", padding: 4, cursor:"pointer" }}>⊗</button>
+              </div>
+            </div>
+
+            {/* DAY TABS */}
+            <div style={{ display: "flex", padding: "0 8px", gap: 2 }}>
+              {window.WEEKDAYS?.SHORT?.map((d, i) => {
+                const date = weekDates[i];
+                const active = selectedDay === i;
+                return (
+                  <button key={i} onClick={() => setSelectedDay(i)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "7px 0 0", background: active ? "#141929" : "transparent", borderBottom: active ? "2px solid #5c6bc0" : "2px solid transparent", borderRadius: "10px 10px 0 0", cursor: "pointer", transition: "all 0.15s" }}>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", color: active ? "#9fa8da" : "#353e5c", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{d}</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", marginTop: 3, marginBottom: 5, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: active ? "#e8eaf6" : "#353e5c", fontSize: "0.78rem" }}>{date?.getDate?.()}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TRIPS LIST */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 80px" }}>
+            {trips?.dayTrips?.length === 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 52, gap: 12 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: "#141929", display: "flex", alignItems: "center", justifyContent: "center", color: "#353e5c" }}>🚗</div>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#353e5c", fontSize: "0.84rem", textAlign: "center" }}>Nenhuma carona para este dia.</p>
+              </div>
+            ) : (
+              trips?.dayTrips?.map(trip => (
+                <div key={trip.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 14 }}>
+                  <div style={{ minWidth: 40, textAlign: "right", paddingTop: 5 }}><span style={{ fontFamily: "'DM Mono', monospace", color: "#5c6bc0", fontSize: "0.73rem", fontWeight: 600 }}>{trip.time}</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 7 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#5c6bc0", flexShrink: 0 }} />
+                    <div style={{ width: 1, flex: 1, background: "#1a1e30", minHeight: 44 }} />
+                  </div>
+                  <div style={{ flex: 1, borderRadius: 14, padding: "11px 12px 10px", background: "#141929", border: "1.5px solid #1e2440" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}><span style={{ color: "#5c6bc0" }}>📍</span><span style={{ fontFamily: "'DM Sans', sans-serif", color: "#e8eaf6", fontWeight: 700, fontSize: "0.86rem", lineHeight: 1.2 }}>{trip.origin} ➔ {trip.destination}</span></div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.75rem" }}>🕐 {trip.time}</span>
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.75rem" }}>👥 {trip.seatsLeft}/{trip.totalSeats} vagas</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}><Avatar name={trip.ownerName} size={18} /><span style={{ fontFamily: "'DM Sans', sans-serif", color: "#7986cb", fontSize: "0.72rem" }}>{trip.ownerName}</span></div>
+                      </div>
+                      <button onClick={() => setJoinTrip(trip)} style={{ fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, background: "#283593", color: "#9fa8da", border: "1px solid #3949ab", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer" }}>🚗 Aderir</button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* MODALS */}
+          {editTrip && (
+            <ModalShell title={editTrip === "new" ? "Nova Carona" : "Editar Carona"} onClose={() => setEditTrip(null)}>
+              <form onSubmit={e => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const data = { origin: fd.get('origin'), destination: fd.get('dest'), time: fd.get('time'), totalSeats: fd.get('seats'), contact: fd.get('contact') };
+                if (editTrip === "new") {
+                  trips?.create?.(data, selectedDay);
+                }
+                setEditTrip(null);
+              }}>
+                <InputField label="Local de Partida" name="origin" type="text" required />
+                <InputField label="Local de Chegada" name="dest" type="text" required />
+                <InputField label="Horário" name="time" type="time" required />
+                <InputField label="Vagas" name="seats" type="number" min="1" max="8" required />
+                <InputField label="Telemóvel" name="contact" type="tel" required />
+                <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+                  <Btn type="button" variant="secondary" full onClick={() => setEditTrip(null)}>Cancelar</Btn>
+                  <Btn type="submit" full>Criar</Btn>
+                </div>
+              </form>
+            </ModalShell>
+          )}
+
+          {joinTrip && (
+            <ModalShell title="Confirmar Adesão" onClose={() => setJoinTrip(null)}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.82rem", marginBottom: 18 }}>Confirma adesão como <strong style={{ color: "#e8eaf6" }}>{auth?.user?.name}</strong>?</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Btn variant="secondary" full onClick={() => setJoinTrip(null)}>Cancelar</Btn>
+                <Btn full onClick={() => { trips?.join?.(joinTrip.id); setJoinTrip(null); }}>✓ Confirmar</Btn>
+              </div>
+            </ModalShell>
+          )}
+
+          {leaveTrip && (
+            <ModalShell title="Sair da Carona" onClose={() => setLeaveTrip(null)}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.82rem", marginBottom: 18 }}>Tem certeza que deseja sair?</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Btn variant="secondary" full onClick={() => setLeaveTrip(null)}>Voltar</Btn>
+                <Btn variant="danger" full onClick={() => { trips?.leave?.(leaveTrip.id); setLeaveTrip(null); }}>Sair</Btn>
+              </div>
+            </ModalShell>
+          )}
+
+          {deleteTrip && (
+            <ModalShell title="Excluir Carona" onClose={() => setDeleteTrip(null)}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#9fa8da", fontSize: "0.82rem", marginBottom: 18 }}>Tem certeza que deseja excluir?</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Btn variant="secondary" full onClick={() => setDeleteTrip(null)}>Cancelar</Btn>
+                <Btn variant="danger" full onClick={() => { trips?.delete?.(deleteTrip.id); setDeleteTrip(null); }}>Excluir</Btn>
+              </div>
+            </ModalShell>
+          )}
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // AUTH SCREEN (Simplificado)
+    // ═══════════════════════════════════════════════════════════════
+    function AuthScreen({ onAuth, onLogin, onRegister, onPasswordRecovery }) {
+      const [mode, setMode] = useState("login");
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [showPw, setShowPw] = useState(false);
+      const [error, setError] = useState("");
+      const [loading, setLoading] = useState(false);
+
+      return (
+        <div style={{ fontFamily: "'DM Sans', sans-serif", width: "100%", height: "100dvh", background: "#0d1117", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px" }}>
+          <div style={{ marginBottom: 36, textAlign: "center" }}>
+            <img src="image_8885dd.png" alt="SENAI CIMATEC" style={{ height: "45px", marginBottom: "16px", objectFit: "contain" }} onError={e => { e.target.onerror = null; e.target.src = "https://placehold.co/200x50/0d1117/5c6bc0?text=SENAI+CIMATEC"; }} />
+          </div>
+          <div style={{ width: "100%" }}>
+            <InputField label="E-mail" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+            <div style={{ marginTop: 14 }}>
+              <label style={{ fontFamily: "'DM Sans', sans-serif", display: "block", color: "#9fa8da", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>Senha</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw ? "text" : "password"} placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} style={{ fontFamily: "'DM Sans', sans-serif", display: "block", width: "100%", background: "#0d1117", border: "1.5px solid #252d4a", borderRadius: 12, padding: "11px 44px 11px 14px", color: "#e8eaf6", fontSize: "0.9rem" }} />
+                <button onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#5c6bc0", cursor: "pointer" }}>👁️</button>
+              </div>
+            </div>
+            {error && <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#ef5350", fontSize: "0.78rem", marginTop: 10 }}>{error}</p>}
+            <Btn full style={{ marginTop: 22 }} onClick={async () => {
+              setLoading(true);
+              const result = await onLogin(email, password);
+              setLoading(false);
+              if (!result.success) setError(result.message);
+            }} disabled={loading}>{loading ? "..." : "Entrar"}</Btn>
+          </div>
+        </div>
+      );
+    }
+
+    // Renderizar App
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
